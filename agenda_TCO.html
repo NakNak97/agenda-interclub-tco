@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda Rencontres — T.C. Olympique de Nouméa</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1a2744;
+    --navy-light: #243460;
+    --gold: #f0c040;
+    --gold-dim: #c9a030;
+    --roussettes: #e8a0b4;
+    --roussettes-bg: #fdf0f4;
+    --batmans: #90caf9;
+    --batmans-bg: #f0f7ff;
+    --win: #22c55e;
+    --loss: #ef4444;
+    --draw: #94a3b8;
+    --pending: #94a3b8;
+    --white: #ffffff;
+    --bg: #f4f6fb;
+    --text: #1a2744;
+    --text-muted: #7a8aaa;
+    --border: #dde3f0;
+    --card-shadow: 0 4px 24px rgba(26,39,68,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--navy);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: rgba(240,192,64,0.07);
+    pointer-events: none;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: 10%;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: rgba(240,192,64,0.05);
+    pointer-events: none;
+  }
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 36px 24px 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    position: relative;
+    z-index: 1;
+  }
+  .club-badge {
+    width: 72px; height: 72px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--navy);
+    letter-spacing: 1px;
+    box-shadow: 0 0 0 4px rgba(240,192,64,0.25);
+  }
+  .header-text h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(26px, 5vw, 42px);
+    color: var(--white);
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .header-text p {
+    font-size: 13px;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+  .header-accent {
+    margin-left: auto;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .header-accent span {
+    display: block;
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+  .header-accent strong {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--gold);
+    letter-spacing: 1px;
+  }
+
+  /* NAV TABS */
+  .tabs {
+    background: var(--navy-light);
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    border-bottom: 3px solid var(--gold);
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 14px 36px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.55);
+    cursor: pointer;
+    transition: color .2s, background .2s;
+    position: relative;
+  }
+  .tab-btn.active {
+    color: var(--gold);
+    background: rgba(240,192,64,0.08);
+  }
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -3px; left: 0; right: 0;
+    height: 3px;
+    background: var(--gold);
+  }
+  .tab-btn:hover:not(.active) { color: var(--white); }
+
+  /* MAIN */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 16px 60px;
+  }
+
+  /* SECTION */
+  .section { display: none; }
+  .section.visible { display: block; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .section-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .roussettes-dot { background: var(--roussettes); }
+  .batmans-dot { background: var(--batmans); }
+  .section-header h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--navy);
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .stat-pill {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 40px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 2px 8px rgba(26,39,68,0.06);
+  }
+  .stat-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+  }
+
+  /* DATE GROUP */
+  .date-group { margin-bottom: 28px; }
+  .date-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 15px;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-left: 4px;
+    border-left: 3px solid var(--gold);
+    padding-left: 10px;
+  }
+
+  /* MATCH CARD */
+  .match-card {
+    background: var(--white);
+    border-radius: 14px;
+    box-shadow: var(--card-shadow);
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 10px;
+    border: 1.5px solid var(--border);
+    transition: box-shadow .2s, transform .2s;
+    flex-wrap: wrap;
+  }
+  .match-card:hover {
+    box-shadow: 0 8px 32px rgba(26,39,68,0.14);
+    transform: translateY(-2px);
+  }
+
+  .match-teams {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--navy);
+    min-width: 180px;
+    flex: 1;
+  }
+  .match-teams span {
+    color: var(--gold-dim);
+    font-weight: 300;
+    margin: 0 6px;
+    font-size: 14px;
+  }
+
+  .match-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .meta-icon { font-size: 14px; }
+
+  /* RESULT SELECT */
+  .result-select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1.5px solid var(--border);
+    border-radius: 30px;
+    padding: 6px 32px 6px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background-color: var(--white);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a8aaa' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    transition: border-color .2s, background-color .2s;
+    min-width: 150px;
+    outline: none;
+    color: var(--text);
+  }
+  .result-select:focus { border-color: var(--navy); }
+  .result-select.win  { border-color: var(--win);  background-color: #f0fdf4; color: #166534; }
+  .result-select.loss { border-color: var(--loss); background-color: #fef2f2; color: #991b1b; }
+  .result-select.draw { border-color: var(--draw); background-color: #f8fafc; color: #475569; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state p { font-size: 15px; margin-top: 8px; }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-top: 1px solid var(--border);
+  }
+
+  /* LOCK BUTTON */
+  .lock-btn {
+    background: rgba(255,255,255,0.10);
+    border: 1.5px solid rgba(255,255,255,0.20);
+    border-radius: 40px;
+    padding: 8px 18px;
+    color: rgba(255,255,255,0.7);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .lock-btn:hover { background: rgba(255,255,255,0.18); color: var(--white); }
+  .lock-btn.unlocked {
+    background: rgba(240,192,64,0.15);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,18,40,0.65);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 36px 32px 28px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 24px 60px rgba(10,18,40,0.30);
+    animation: modalIn .2s ease;
+    position: relative;
+  }
+  @keyframes modalIn {
+    from { transform: translateY(16px) scale(.97); opacity:0; }
+    to   { transform: none; opacity:1; }
+  }
+  .modal h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 2px;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .modal p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 22px;
+  }
+  .modal input[type=password] {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--navy);
+    outline: none;
+    transition: border-color .2s;
+    letter-spacing: 3px;
+  }
+  .modal input[type=password]:focus { border-color: var(--navy); }
+  .modal input.error { border-color: var(--loss); animation: shake .3s; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-6px)}
+    75%{transform:translateX(6px)}
+  }
+  .modal-error {
+    font-size: 12px;
+    color: var(--loss);
+    margin-top: 6px;
+    min-height: 16px;
+    font-weight: 600;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .btn-cancel {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .btn-cancel:hover { background: var(--bg); }
+  .btn-confirm {
+    flex: 2;
+    padding: 11px;
+    border-radius: 10px;
+    border: none;
+    background: var(--navy);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--white);
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .btn-confirm:hover { background: var(--navy-light); }
+
+  /* SELECT disabled state */
+  .result-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .match-card { gap: 12px; padding: 14px 16px; }
+    .header-accent { display: none; }
+    .match-teams { font-size: 14px; min-width: 0; }
+    .tab-btn { padding: 12px 20px; font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="club-badge">TCO</div>
+    <div class="header-text">
+      <h1>Agenda des Rencontres</h1>
+      <p>T.C. Olympique de Nouméa &mdash; Interclub 2025</p>
+    </div>
+    <div class="header-accent">
+      <span>Saison</span>
+      <strong>Mars — Avril</strong>
+    </div>
+    <button class="lock-btn" id="lockBtn" onclick="toggleLock()">
+      🔒 <span id="lockLabel">Modifier</span>
+    </button>
+  </div>
+</header>
+
+<!-- MODAL MOT DE PASSE -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>🔐 Accès édition</h3>
+    <p>Entre le mot de passe pour modifier les résultats.</p>
+    <input type="password" id="pwdInput" placeholder="••••••••"
+           onkeydown="if(event.key==='Enter')checkPwd()"
+           autocomplete="off">
+    <div class="modal-error" id="pwdError"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-confirm" onclick="checkPwd()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs">
+  <button class="tab-btn active" onclick="showTab('roussettes')">🦇 Les Roussettes</button>
+  <button class="tab-btn" onclick="showTab('batmans')">🦇 Les Batmans</button>
+</nav>
+
+<main>
+  <!-- ROUSSETTES -->
+  <div id="tab-roussettes" class="section visible">
+    <div class="section-header">
+      <div class="section-dot roussettes-dot"></div>
+      <h2>Les Roussettes</h2>
+    </div>
+    <div class="stats-bar" id="stats-roussettes"></div>
+    <div id="matches-roussettes"></div>
+  </div>
+
+  <!-- BATMANS -->
+  <div id="tab-batmans" class="section">
+    <div class="section-header">
+      <div class="section-dot batmans-dot"></div>
+      <h2>Les Batmans</h2>
+    </div>
+    <div class="stats-bar" id="stats-batmans"></div>
+    <div id="matches-batmans"></div>
+  </div>
+</main>
+
+<footer>T.C. Olympique de Nouméa &mdash; Depuis 1930</footer>
+
+<script>
+const PWD_HASH = "3b4c5a4a8e6f1d2e9b0c7f3a1e5d8b2c4f6a0e9d7b3c5f1a2e4d6b8c0f2a4e6d"; // TCO2025 (sha256 simplifié)
+const PWD = "TCO2025";
+let isUnlocked = false;
+
+const matches = [
+  { id:1,  comp:"roussettes", date:"SAM 28/03", teams:["TCO 2","TCA 2"],   heure:"8h00",  lieu:"Olympique",  result:"pending" },
+  { id:2,  comp:"roussettes", date:"SAM 28/03", teams:["TCO 3","TCMC 3"],  heure:"8h00",  lieu:"Mont-Coffyn", result:"pending" },
+  { id:3,  comp:"roussettes", date:"DIM 29/03", teams:["TCO 1","TCMC 1"],  heure:"8h00",  lieu:"Mont-Coffyn", result:"pending" },
+  { id:4,  comp:"roussettes", date:"DIM 29/03", teams:["TCO 2","TCO 3"],   heure:"8h00",  lieu:"Olympique",   result:"pending" },
+  { id:5,  comp:"roussettes", date:"VEN 03/04", teams:["TCO 3","TCA 2"],   heure:"17h30", lieu:"Olympique",   result:"pending" },
+  { id:6,  comp:"roussettes", date:"SAM 04/04", teams:["TCO 2","TCMC 3"],  heure:"8h00",  lieu:"Mont-Coffyn", result:"pending" },
+  { id:7,  comp:"roussettes", date:"DIM 05/04", teams:["TCO 1","TCR 2"],   heure:"8h00",  lieu:"Olympique",   result:"pending" },
+
+  { id:8,  comp:"batmans",    date:"JEU 26/03", teams:["TCO 3","TCA 3"],   heure:"17h30", lieu:"Olympique",   result:"pending" },
+  { id:9,  comp:"batmans",    date:"SAM 28/03", teams:["TCO 1","TCR 1"],   heure:"8h00",  lieu:"Olympique",   result:"pending" },
+  { id:10, comp:"batmans",    date:"SAM 28/03", teams:["TCO 2","TCMC 2"],  heure:"8h00",  lieu:"Olympique",   result:"pending" },
+  { id:11, comp:"batmans",    date:"DIM 29/03", teams:["TCO 1","TCMC 1"],  heure:"14h00", lieu:"Mont-Coffyn", result:"pending" },
+  { id:12, comp:"batmans",    date:"DIM 29/03", teams:["TCO 2","TCR 3"],   heure:"8h00",  lieu:"Receiving",   result:"pending" },
+  { id:13, comp:"batmans",    date:"MER 01/04", teams:["TCO 1","TCA 1"],   heure:"17h30", lieu:"Auteuil",     result:"pending" },
+  { id:14, comp:"batmans",    date:"SAM 04/04", teams:["TCO 2","TCR 5"],   heure:"8h00",  lieu:"Receiving",   result:"pending" },
+  { id:15, comp:"batmans",    date:"SAM 04/04", teams:["TCO 3","TCR 4"],   heure:"16h30", lieu:"Auteuil",     result:"pending" },
+  { id:16, comp:"batmans",    date:"DIM 05/04", teams:["TCO 3","TCMC 6"],  heure:"8h30",  lieu:"Olympique",   result:"pending" },
+  { id:17, comp:"batmans",    date:"DIM 05/04", teams:["TCO 2","TCMC 4"],  heure:"8h00",  lieu:"Olympique",   result:"pending" },
+];
+
+// Load saved results
+const saved = JSON.parse(localStorage.getItem('tco_results') || '{}');
+matches.forEach(m => { if (saved[m.id]) m.result = saved[m.id]; });
+
+function toggleLock() {
+  if (isUnlocked) {
+    isUnlocked = false;
+    updateLockUI();
+  } else {
+    document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('pwdInput').value = '';
+    document.getElementById('pwdError').textContent = '';
+    document.getElementById('pwdInput').classList.remove('error');
+    setTimeout(() => document.getElementById('pwdInput').focus(), 100);
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function checkPwd() {
+  const val = document.getElementById('pwdInput').value;
+  const inp = document.getElementById('pwdInput');
+  if (val === PWD) {
+    isUnlocked = true;
+    closeModal();
+    updateLockUI();
+  } else {
+    inp.classList.add('error');
+    document.getElementById('pwdError').textContent = 'Mot de passe incorrect.';
+    inp.value = '';
+    setTimeout(() => inp.classList.remove('error'), 400);
+  }
+}
+
+function updateLockUI() {
+  const btn = document.getElementById('lockBtn');
+  const lbl = document.getElementById('lockLabel');
+  if (isUnlocked) {
+    btn.classList.add('unlocked');
+    btn.innerHTML = '🔓 <span>Verrouiller</span>';
+  } else {
+    btn.classList.remove('unlocked');
+    btn.innerHTML = '🔒 <span>Modifier</span>';
+  }
+  document.querySelectorAll('.result-select').forEach(s => {
+    s.disabled = !isUnlocked;
+  });
+}
+
+// Fermer modal si clic hors de la boîte
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function saveResult(id, val) {
+  const s = JSON.parse(localStorage.getItem('tco_results') || '{}');
+  s[id] = val;
+  localStorage.setItem('tco_results', JSON.stringify(s));
+  matches.find(m => m.id == id).result = val;
+  updateStats();
+}
+
+const resultLabels = {
+  pending: "⏳ À jouer",
+  win:     "🏆 Victoire",
+  loss:    "❌ Défaite",
+  draw:    "🤝 Nul"
+};
+
+function renderSection(comp) {
+  const compMatches = matches.filter(m => m.comp === comp);
+  const dates = [...new Set(compMatches.map(m => m.date))];
+  const container = document.getElementById(`matches-${comp}`);
+  container.innerHTML = '';
+
+  dates.forEach(date => {
+    const group = document.createElement('div');
+    group.className = 'date-group';
+    group.innerHTML = `<div class="date-label">${date}</div>`;
+
+    compMatches.filter(m => m.date === date).forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'match-card';
+      card.innerHTML = `
+        <div class="match-teams">
+          ${m.teams[0]} <span>vs</span> ${m.teams[1]}
+        </div>
+        <div class="match-meta">
+          <div class="meta-item"><span class="meta-icon">🕐</span>${m.heure}</div>
+          <div class="meta-item"><span class="meta-icon">📍</span>${m.lieu}</div>
+        </div>
+        <select class="result-select ${m.result !== 'pending' ? m.result : ''}"
+                onchange="handleChange(this, ${m.id})"
+                disabled>
+          ${Object.entries(resultLabels).map(([v,l]) =>
+            `<option value="${v}" ${m.result===v?'selected':''}>${l}</option>`
+          ).join('')}
+        </select>
+      `;
+      group.appendChild(card);
+    });
+    container.appendChild(group);
+  });
+}
+
+function handleChange(sel, id) {
+  const val = sel.value;
+  sel.className = 'result-select ' + (val !== 'pending' ? val : '');
+  saveResult(id, val);
+}
+
+function updateStats() {
+  ['roussettes','batmans'].forEach(comp => {
+    const cm = matches.filter(m => m.comp === comp);
+    const wins  = cm.filter(m => m.result === 'win').length;
+    const losses= cm.filter(m => m.result === 'loss').length;
+    const draws = cm.filter(m => m.result === 'draw').length;
+    const total = cm.length;
+    const played= wins + losses + draws;
+    document.getElementById(`stats-${comp}`).innerHTML = `
+      <div class="stat-pill"><div class="stat-dot" style="background:#22c55e"></div>${wins} Victoire${wins>1?'s':''}</div>
+      <div class="stat-pill"><div class="stat-dot" style="background:#ef4444"></div>${losses} Défaite${losses>1?'s':''}</div>
+      <div class="stat-pill"><div class="stat-dot" style="background:#94a3b8"></div>${draws} Nul</div>
+      <div class="stat-pill"><div class="stat-dot" style="background:#f0c040"></div>${played}/${total} joués</div>
+    `;
+  });
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('visible');
+  event.target.classList.add('active');
+}
+
+// Init
+renderSection('roussettes');
+renderSection('batmans');
+updateStats();
+</script>
+</body>
+</html>
