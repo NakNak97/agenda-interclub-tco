@@ -517,12 +517,19 @@
 <footer>T.C. Olympique de Nouméa &mdash; Depuis 1930</footer>
 
 <script>
-const PWD_HASH = "3b4c5a4a8e6f1d2e9b0c7f3a1e5d8b2c4f6a0e9d7b3c5f1a2e4d6b8c0f2a4e6d"; // TCO2025 (sha256 simplifié)
+// ── JSONBin config ──────────────────────────────────────────────
+const BIN_ID     = "69c5dd27aa77b81da92397d3";
+const MASTER_KEY = "$2a$10$IiSNWPDl3Yqk/xofzkav0eMKEnws48cszoJjH6IQLLw7E9R3gz7By";
+const ACCESS_KEY = "$2a$10$OMCkUpFiBzXIvUq2d4Ko4.IC/Vd9H64j5bz8wn.ZbVLwrp9PZCT.O";
+const BIN_URL    = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+// ── Auth ────────────────────────────────────────────────────────
 const PWD = "TCO2025";
 let isUnlocked = false;
 
+// ── Données matchs ──────────────────────────────────────────────
 const matches = [
-  { id:1,  comp:"roussettes", date:"SAM 28/03", teams:["TCO 2","TCA 2"],   heure:"8h00",  lieu:"Olympique",  result:"pending" },
+  { id:1,  comp:"roussettes", date:"SAM 28/03", teams:["TCO 2","TCA 2"],   heure:"8h00",  lieu:"Olympique",   result:"pending" },
   { id:2,  comp:"roussettes", date:"SAM 28/03", teams:["TCO 3","TCMC 3"],  heure:"8h00",  lieu:"Mont-Coffyn", result:"pending" },
   { id:3,  comp:"roussettes", date:"DIM 29/03", teams:["TCO 1","TCMC 1"],  heure:"8h00",  lieu:"Mont-Coffyn", result:"pending" },
   { id:4,  comp:"roussettes", date:"DIM 29/03", teams:["TCO 2","TCO 3"],   heure:"8h00",  lieu:"Olympique",   result:"pending" },
@@ -542,10 +549,118 @@ const matches = [
   { id:17, comp:"batmans",    date:"DIM 05/04", teams:["TCO 2","TCMC 4"],  heure:"8h00",  lieu:"Olympique",   result:"pending" },
 ];
 
-// Load saved results
-const saved = JSON.parse(localStorage.getItem('tco_results') || '{}');
-matches.forEach(m => { if (saved[m.id]) m.result = saved[m.id]; });
+const resultLabels = {
+  pending: "⏳ À jouer",
+  win:     "🏆 Victoire",
+  loss:    "❌ Défaite",
+  draw:    "🤝 Nul"
+};
 
+// ── JSONBin : lecture ───────────────────────────────────────────
+async function loadResults() {
+  try {
+    const res = await fetch(BIN_URL + "/latest", {
+      headers: { "X-Master-Key": MASTER_KEY, "X-Access-Key": ACCESS_KEY }
+    });
+    const data = await res.json();
+    const saved = data.record || {};
+    matches.forEach(m => { if (saved[m.id]) m.result = saved[m.id]; });
+  } catch(e) {
+    console.warn("Impossible de charger les résultats :", e);
+  }
+  renderSection('roussettes');
+  renderSection('batmans');
+  updateStats();
+}
+
+// ── JSONBin : écriture ──────────────────────────────────────────
+async function saveResult(id, val) {
+  matches.find(m => m.id == id).result = val;
+  updateStats();
+  // Re-render pour appliquer couleur immédiatement
+  renderSection('roussettes');
+  renderSection('batmans');
+  updateLockUI();
+
+  // Construire l'objet complet des résultats
+  const record = {};
+  matches.forEach(m => { record[m.id] = m.result; });
+
+  try {
+    await fetch(BIN_URL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Master-Key": MASTER_KEY,
+        "X-Access-Key": ACCESS_KEY
+      },
+      body: JSON.stringify(record)
+    });
+  } catch(e) {
+    console.warn("Erreur de sauvegarde :", e);
+  }
+}
+
+// ── Rendu ───────────────────────────────────────────────────────
+function renderSection(comp) {
+  const compMatches = matches.filter(m => m.comp === comp);
+  const dates = [...new Set(compMatches.map(m => m.date))];
+  const container = document.getElementById(`matches-${comp}`);
+  container.innerHTML = '';
+
+  dates.forEach(date => {
+    const group = document.createElement('div');
+    group.className = 'date-group';
+    group.innerHTML = `<div class="date-label">${date}</div>`;
+
+    compMatches.filter(m => m.date === date).forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'match-card';
+      card.innerHTML = `
+        <div class="match-teams">
+          ${m.teams[0]} <span>vs</span> ${m.teams[1]}
+        </div>
+        <div class="match-meta">
+          <div class="meta-item"><span class="meta-icon">🕐</span>${m.heure}</div>
+          <div class="meta-item"><span class="meta-icon">📍</span>${m.lieu}</div>
+        </div>
+        <select class="result-select ${m.result !== 'pending' ? m.result : ''}"
+                onchange="handleChange(this, ${m.id})"
+                ${isUnlocked ? '' : 'disabled'}>
+          ${Object.entries(resultLabels).map(([v,l]) =>
+            `<option value="${v}" ${m.result===v?'selected':''}>${l}</option>`
+          ).join('')}
+        </select>
+      `;
+      group.appendChild(card);
+    });
+    container.appendChild(group);
+  });
+}
+
+function handleChange(sel, id) {
+  const val = sel.value;
+  saveResult(id, val);
+}
+
+function updateStats() {
+  ['roussettes','batmans'].forEach(comp => {
+    const cm = matches.filter(m => m.comp === comp);
+    const wins   = cm.filter(m => m.result === 'win').length;
+    const losses = cm.filter(m => m.result === 'loss').length;
+    const draws  = cm.filter(m => m.result === 'draw').length;
+    const total  = cm.length;
+    const played = wins + losses + draws;
+    document.getElementById(`stats-${comp}`).innerHTML = `
+      <div class="stat-pill"><div class="stat-dot" style="background:#22c55e"></div>${wins} Victoire${wins>1?'s':''}</div>
+      <div class="stat-pill"><div class="stat-dot" style="background:#ef4444"></div>${losses} Défaite${losses>1?'s':''}</div>
+      <div class="stat-pill"><div class="stat-dot" style="background:#94a3b8"></div>${draws} Nul</div>
+      <div class="stat-pill"><div class="stat-dot" style="background:#f0c040"></div>${played}/${total} joués</div>
+    `;
+  });
+}
+
+// ── Lock / Unlock ───────────────────────────────────────────────
 function toggleLock() {
   if (isUnlocked) {
     isUnlocked = false;
@@ -580,7 +695,6 @@ function checkPwd() {
 
 function updateLockUI() {
   const btn = document.getElementById('lockBtn');
-  const lbl = document.getElementById('lockLabel');
   if (isUnlocked) {
     btn.classList.add('unlocked');
     btn.innerHTML = '🔓 <span>Verrouiller</span>';
@@ -593,84 +707,9 @@ function updateLockUI() {
   });
 }
 
-// Fermer modal si clic hors de la boîte
 document.getElementById('modalOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
-
-function saveResult(id, val) {
-  const s = JSON.parse(localStorage.getItem('tco_results') || '{}');
-  s[id] = val;
-  localStorage.setItem('tco_results', JSON.stringify(s));
-  matches.find(m => m.id == id).result = val;
-  updateStats();
-}
-
-const resultLabels = {
-  pending: "⏳ À jouer",
-  win:     "🏆 Victoire",
-  loss:    "❌ Défaite",
-  draw:    "🤝 Nul"
-};
-
-function renderSection(comp) {
-  const compMatches = matches.filter(m => m.comp === comp);
-  const dates = [...new Set(compMatches.map(m => m.date))];
-  const container = document.getElementById(`matches-${comp}`);
-  container.innerHTML = '';
-
-  dates.forEach(date => {
-    const group = document.createElement('div');
-    group.className = 'date-group';
-    group.innerHTML = `<div class="date-label">${date}</div>`;
-
-    compMatches.filter(m => m.date === date).forEach(m => {
-      const card = document.createElement('div');
-      card.className = 'match-card';
-      card.innerHTML = `
-        <div class="match-teams">
-          ${m.teams[0]} <span>vs</span> ${m.teams[1]}
-        </div>
-        <div class="match-meta">
-          <div class="meta-item"><span class="meta-icon">🕐</span>${m.heure}</div>
-          <div class="meta-item"><span class="meta-icon">📍</span>${m.lieu}</div>
-        </div>
-        <select class="result-select ${m.result !== 'pending' ? m.result : ''}"
-                onchange="handleChange(this, ${m.id})"
-                disabled>
-          ${Object.entries(resultLabels).map(([v,l]) =>
-            `<option value="${v}" ${m.result===v?'selected':''}>${l}</option>`
-          ).join('')}
-        </select>
-      `;
-      group.appendChild(card);
-    });
-    container.appendChild(group);
-  });
-}
-
-function handleChange(sel, id) {
-  const val = sel.value;
-  sel.className = 'result-select ' + (val !== 'pending' ? val : '');
-  saveResult(id, val);
-}
-
-function updateStats() {
-  ['roussettes','batmans'].forEach(comp => {
-    const cm = matches.filter(m => m.comp === comp);
-    const wins  = cm.filter(m => m.result === 'win').length;
-    const losses= cm.filter(m => m.result === 'loss').length;
-    const draws = cm.filter(m => m.result === 'draw').length;
-    const total = cm.length;
-    const played= wins + losses + draws;
-    document.getElementById(`stats-${comp}`).innerHTML = `
-      <div class="stat-pill"><div class="stat-dot" style="background:#22c55e"></div>${wins} Victoire${wins>1?'s':''}</div>
-      <div class="stat-pill"><div class="stat-dot" style="background:#ef4444"></div>${losses} Défaite${losses>1?'s':''}</div>
-      <div class="stat-pill"><div class="stat-dot" style="background:#94a3b8"></div>${draws} Nul</div>
-      <div class="stat-pill"><div class="stat-dot" style="background:#f0c040"></div>${played}/${total} joués</div>
-    `;
-  });
-}
 
 function showTab(tab) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
@@ -679,10 +718,8 @@ function showTab(tab) {
   event.target.classList.add('active');
 }
 
-// Init
-renderSection('roussettes');
-renderSection('batmans');
-updateStats();
+// ── Init ────────────────────────────────────────────────────────
+loadResults();
 </script>
 </body>
 </html>
